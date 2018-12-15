@@ -6,13 +6,18 @@ from rest_framework.status import HTTP_404_NOT_FOUND, HTTP_200_OK, HTTP_400_BAD_
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.generics import get_object_or_404
 
+from django.db.utils import IntegrityError
+
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
-from .models import Member, Booklet, Appointment
+from .models import Member, Booklet, Appointment, Order
 
-from .serializers import UserSerializer, BookletSerializer, AppointmentCreationSerializer, AppointmentApprovalSerializer
+from .serializers import (
+    UserSerializer, BookletSerializer, AppointmentCreationSerializer, AppointmentApprovalSerializer,
+    OrderSerializer
+)
 
-from .query import BookletQuerySerializer
+from .query import BookletQuerySerializer, TeahcerQuerySerializer
 
 
 class SignupView(APIView):
@@ -22,11 +27,14 @@ class SignupView(APIView):
         serializer = UserSerializer(data=request.data)
 
         if serializer.is_valid():
-            target_user = Member.objects.create_user(**request.data)
-            target_user.save()
+            try:
+                target_user = Member.objects.create_user(**request.data)
+                target_user.save()
+            except IntegrityError:
+                return Response({"error":"Username already exist"}, status=HTTP_400_BAD_REQUEST)
 
             return Response(serializer.data)
-        return Response(serializer.errors, status=401)
+        return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
 
 class LoginView(APIView):
@@ -60,6 +68,21 @@ class TeacherLoginView(APIView):
         token, _ = Token.objects.get_or_create(user=user)
         return Response({'token': token.key},
                         status=HTTP_200_OK)
+
+
+class TeacherListView(APIView):
+    permission_classes = (AllowAny,)
+
+    def get(self, request, format=None):
+        query = TeahcerQuerySerializer(data=request.query_params)
+
+        if query.is_valid():
+            query = Member.objects.filter(type="TEACHER",**query.data)
+            serializer = UserSerializer(query, many=True)
+
+            return Response(serializer.data, status=HTTP_200_OK)
+
+        return Response(query.errors, status=HTTP_400_BAD_REQUEST)
 
 
 class BookletAPI(APIView):
@@ -142,3 +165,50 @@ class AppointmentDetailAPI(APIView):
         serializer = BookletSerializer(query, many=True)
 
         return Response(serializer.data, status=HTTP_200_OK)
+
+
+class OrderAPI(APIView):
+    authentication_classes = (JSONWebTokenAuthentication, )
+    permission_classes = (AllowAny,)
+
+    def post(self, request, format=None):
+        request_data = request.data
+        request_data.update({
+            "student": request.user
+        })
+        if request.user.member.type == "STUDENT":
+            serializer = OrderSerializer(data=request_data)
+
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=HTTP_200_OK)
+
+            return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+
+        return Response(data={"error": "must be a student to create an order"}, status=HTTP_401_UNAUTHORIZED)
+
+    def get(self, request, format=None):
+
+        queryset = Order.object.all()
+        serializer = BookletSerializer(queryset, many=True)
+
+        return Response(serializer.data, status=HTTP_200_OK)
+
+class OrderDetailAPI(APIView):
+    authentication_classes = (JSONWebTokenAuthentication, )
+    permission_classes = (AllowAny,)
+
+    def get(self, request, pk: int, format=None):
+
+        query = get_object_or_404(Order, pk)
+        serializer = OrderSerializer(query, many=True)
+
+        return Response(serializer.data, status=HTTP_200_OK)
+
+    def patch(self, request, pk: int, format=None):
+
+        query = get_object_or_404(Order, pk)
+        serializer = OrderSerializer(query, many=True)
+
+        return Response(serializer.data, status=HTTP_200_OK)
+

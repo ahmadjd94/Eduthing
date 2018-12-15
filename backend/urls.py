@@ -17,7 +17,7 @@ from django.contrib import admin
 from django.urls import path
 
 
-from .views import SignupView, BookletAPI, AppointmentAPI, AppointmentDetailAPI
+from .views import SignupView, BookletAPI, AppointmentAPI, AppointmentDetailAPI, TeacherListView
 from rest_framework_jwt.views import obtain_jwt_token
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -31,4 +31,9 @@ urlpatterns = [
     path('appointments', AppointmentAPI.as_view()),
 
     path('appointments/<int:pk>', AppointmentDetailAPI.as_view()),
+
+    path('orders', AppointmentAPI.as_view()),
+
+    path('teachers', TeacherListView.as_view()),
+
 ]

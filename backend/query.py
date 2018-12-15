@@ -32,3 +32,33 @@ class BookletQuerySerializer(serializers.Serializer):
             })
 
         return query
+
+
+class TeahcerQuerySerializer(serializers.Serializer):
+    first_name = serializers.CharField(required=False)
+    last_name = serializers.CharField(required=False)
+    education = serializers.ChoiceField(choices=SYSTEMS, required=False)
+
+    def to_representation(self, instance):
+        query = {}
+
+        first_name_query = instance.get("first_name")
+        last_name_query = instance.get("last_name")
+        education_query = instance.get("education")
+
+        if first_name_query:
+            query.update({
+                "first_name__icontains": first_name_query
+            })
+
+        if last_name_query:
+            query.update({
+                "last_name__icontains": last_name_query
+            })
+
+        if education_query:
+            query.update({
+                "education__icontains": education_query
+            })
+
+        return query

@@ -5,9 +5,26 @@ from .models import Appointment, Booklet, Order, SYSTEMS, PAYMENT_METHODS, Group
 
 
 class UserSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(required=True, write_only=True)
+
     class Meta:
         model = Member
-        fields = ('username', 'email')
+        fields = (
+            "first_name",
+            "last_name",
+            "type",
+            "phone",
+            "password",
+            "gender",
+            "education",
+            "date_of_birth",
+            "address",
+            "card_number",
+            "card_expire_date",
+            "group_lectures",
+            "max_number_per_group",
+            "price_per_hour",
+        )
 
 
 class BookletSerializer(serializers.ModelSerializer):
@@ -27,6 +44,8 @@ class BookletSerializer(serializers.ModelSerializer):
 class OrderSerializer (serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
     address = serializers.CharField(max_length=32)
+    student = serializers.PrimaryKeyRelatedField(queryset=Member.objects.filter(type="STUDENT"))
+    Booklet = serializers.PrimaryKeyRelatedField(queryset=Booklet.objects.all())
     payment_method = serializers.ChoiceField(choices=PAYMENT_METHODS)
 
     class Meta:

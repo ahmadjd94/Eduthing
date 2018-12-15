@@ -31,12 +31,12 @@ APPOINTMENT_STATUSES = (
 )
 
 
-class Member (User):
+class Member (User):  # created
     type = models.CharField(max_length=32, choices=MEMBER_TYPES)
     phone = models.CharField(max_length=32)
     gender = models.CharField(max_length=32)
     education = models.CharField(choices=SYSTEMS, max_length=32)
-    date_of_birth = models.DateField()
+    date_of_birth = models.DateField(blank=False)
     address = models.CharField(max_length=32)
     card_number = models.CharField(max_length=16)
     card_expire_date = models.DateField()
@@ -45,7 +45,7 @@ class Member (User):
     price_per_hour = models.FloatField()
 
 
-class Booklet(models.Model):
+class Booklet(models.Model): # created
     type = models.CharField(choices=BOOKLET_TYPES, max_length=32)
     tutor = models.ForeignKey("member", on_delete=models.CASCADE, related_name="booklets")
     subject = models.CharField(max_length=32)
@@ -55,26 +55,6 @@ class Booklet(models.Model):
     stock = models.IntegerField()
 
     objects = models.manager
-
-
-class Chat(models.Model):
-    id = models.IntegerField(primary_key=True)
-    name = models.CharField(max_length=32)
-    admin = models.ForeignKey("member", on_delete=models.CASCADE)
-
-
-class ChatMember(models.Model):
-    chat = models.ForeignKey("chat", on_delete=models.CASCADE)
-    member = models.ForeignKey("member", on_delete=models.DO_NOTHING, related_name="chats")
-
-    class Meta:
-        unique_together = ("chat", "member")
-
-
-class Messages(models.Model):
-    id = models.IntegerField(primary_key=True)
-    sender = models.ForeignKey("member", on_delete=models.CASCADE, related_name="messages")
-    chat = models.ForeignKey("chat", on_delete=models.CASCADE)
 
 
 class Order (models.Model):
@@ -110,6 +90,8 @@ class GroupAppointment(models.Model):
     duration = models.TimeField()
     price_per_student = models.FloatField()
     teacher_rating = models.IntegerField()
+    status = models.CharField(choices=APPOINTMENT_STATUSES, max_length=32, default="WAITING")
+
 
     class Meta:
         db_table = "group_appointment"
