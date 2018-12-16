@@ -10,11 +10,11 @@ from django.db.utils import IntegrityError
 
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
-from .models import Member, Booklet, Appointment, Order
+from .models import Member, Booklet, Appointment, Order, APPROVED, TEACHER, STUDENT
 
 from .serializers import (
-    UserSerializer, BookletSerializer, AppointmentCreationSerializer, AppointmentApprovalSerializer,
-    OrderSerializer
+    UserSerializer, BookletSerializer, AppointmentSerializer,
+    OrderSerializer,
 )
 
 from .query import BookletQuerySerializer, TeahcerQuerySerializer
@@ -54,24 +54,8 @@ class LoginView(APIView):
                         status=HTTP_200_OK)
 
 
-class TeacherLoginView(APIView):
-    def post(self, request, format=None):
-        data = request.data
-
-        username = data.get('username', None)
-        password = data.get('password', None)
-        print(username, password)
-        user = authenticate(username=username, password=password)
-        if not user:
-            return Response({'error': 'Invalid Credentials'},
-                            status=HTTP_404_NOT_FOUND)
-        token, _ = Token.objects.get_or_create(user=user)
-        return Response({'token': token.key},
-                        status=HTTP_200_OK)
-
-
-class TeacherListView(APIView):
-    permission_classes = (AllowAny,)
+class TeacherListView(APIView): #end point tested
+    permission_classes = (IsAuthenticated,)
 
     def get(self, request, format=None):
         query = TeahcerQuerySerializer(data=request.query_params)
@@ -87,27 +71,29 @@ class TeacherListView(APIView):
 
 class BookletAPI(APIView):
     authentication_classes = (JSONWebTokenAuthentication, )
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthenticated,)
 
     def post(self, request, format=None):
         request_data = request.data
-        request_data.update({
-            "tutor": request.user.id
-        })
-        serializer = BookletSerializer(data=request_data)
+        if request.user.member.type == TEACHER:
 
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=HTTP_200_OK)
+            request_data.update({
+                "tutor": request.user.id
+            })
+            serializer = BookletSerializer(data=request_data)
 
-        return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=HTTP_200_OK)
+
+            return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+
+        return Response({"error": "user must be a teacher"}, status=HTTP_401_UNAUTHORIZED)
 
     def get(self, request, format=None):
-
         query_serializer = BookletQuerySerializer(data=request.query_params)
-        print(request.query_params)
+
         if query_serializer.is_valid():
-            print(query_serializer.data)
             query = Booklet.objects.filter(**query_serializer.data)
             serializer = BookletSerializer(query, many=True)
 
@@ -118,18 +104,19 @@ class BookletAPI(APIView):
 
 class AppointmentAPI(APIView):
     authentication_classes = (JSONWebTokenAuthentication, )
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthenticated,)
 
     def post(self, request, format=None):
         request_data = request.data
         request_data.update({
             "student": request.user
         })
-        if request.user.member.type == "STUDENT":
-            serializer = AppointmentCreationSerializer(data=request_data)
+        if request.user.member.type == STUDENT:
+            serializer = AppointmentSerializer(data=request_data)
 
             if serializer.is_valid():
                 serializer.save()
+
                 return Response(serializer.data, status=HTTP_200_OK)
 
             return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
@@ -150,7 +137,7 @@ class AppointmentAPI(APIView):
 
 class AppointmentDetailAPI(APIView):
     authentication_classes = (JSONWebTokenAuthentication, )
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthenticated,)
 
     def get(self, request, pk: int, format=None):
 
@@ -161,22 +148,24 @@ class AppointmentDetailAPI(APIView):
 
     def patch(self, request, pk: int, format=None):
 
-        query = Booklet.objects.get_object_or_404(pk)
-        serializer = BookletSerializer(query, many=True)
+        query = Appointment.objects.get_object_or_404(pk)
+        query.status = APPROVED
+        query.save()
+        serializer = AppointmentSerializer(query, many=True)
 
         return Response(serializer.data, status=HTTP_200_OK)
 
 
 class OrderAPI(APIView):
     authentication_classes = (JSONWebTokenAuthentication, )
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthenticated,)
 
     def post(self, request, format=None):
         request_data = request.data
         request_data.update({
             "student": request.user
         })
-        if request.user.member.type == "STUDENT":
+        if request.user.member.type == STUDENT:
             serializer = OrderSerializer(data=request_data)
 
             if serializer.is_valid():
@@ -190,7 +179,7 @@ class OrderAPI(APIView):
     def get(self, request, format=None):
 
         queryset = Order.object.all()
-        serializer = BookletSerializer(queryset, many=True)
+        serializer = OrderSerializer(queryset, many=True)
 
         return Response(serializer.data, status=HTTP_200_OK)
 

@@ -1,7 +1,10 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
 
-from .models import Appointment, Booklet, Order, SYSTEMS, PAYMENT_METHODS, GroupAppointment, Upload, Member, APPOINTMENT_STATUSES
+from .models import (
+    Appointment, Booklet, Order, SYSTEMS, PAYMENT_METHODS, GroupAppointment, Upload, Member, TEACHER,
+    MEMBER_TYPES
+)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -28,7 +31,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class BookletSerializer(serializers.ModelSerializer):
-    tutor = serializers.PrimaryKeyRelatedField(queryset=Member.objects.all())
+    tutor = serializers.PrimaryKeyRelatedField(queryset=Member.objects.filter(type=TEACHER))
     type = serializers.CharField(required=True)
     subject = serializers.CharField(max_length=32, required=True)
     price = serializers.FloatField(required=True)
@@ -38,7 +41,15 @@ class BookletSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Booklet
-        fields = ('tutor', 'type', 'subject', 'price', 'year_published', 'education_system', 'stock')
+        fields = (
+            'tutor',
+            'type',
+            'subject',
+            'price',
+            'year_published',
+            'education_system',
+            'stock'
+        )
 
 
 class OrderSerializer (serializers.ModelSerializer):
@@ -52,7 +63,7 @@ class OrderSerializer (serializers.ModelSerializer):
         model = Order
 
 
-class AppointmentCreationSerializer(serializers.ModelSerializer):
+class AppointmentSerializer(serializers.ModelSerializer):
     student = serializers.PrimaryKeyRelatedField(queryset=Member.objects.filter(type="STUDENT"))
     tutor = serializers.PrimaryKeyRelatedField(queryset=Member.objects.filter(type="TEACHER"))
     subject = serializers.CharField(max_length=32)
@@ -63,14 +74,16 @@ class AppointmentCreationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Appointment
-        fields = ('subject', 'time', 'address', 'price', 'tutor', 'duration', 'student')
-
-
-class AppointmentApprovalSerializer(serializers.ModelSerializer):
-    status = serializers.ChoiceField(choices=APPOINTMENT_STATUSES, required=True)
-
-    class Meta:
-        model = Appointment
+        fields = (
+            'subject',
+            'time',
+            'address',
+            'price',
+            'tutor',
+            'duration',
+            'student',
+            'status'
+        )
 
 
 class GroupAppointmentSerializer(serializers.ModelSerializer):

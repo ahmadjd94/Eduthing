@@ -26,7 +26,7 @@ urlpatterns = [
 
     path('sign-up', SignupView.as_view()),
 
-    path('booklet', BookletAPI.as_view()),
+    path('booklets', BookletAPI.as_view()),
 
     path('appointments', AppointmentAPI.as_view()),
 
