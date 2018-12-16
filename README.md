@@ -4,8 +4,7 @@ docker-compose up -d
 
 docker ps 
 
-"check the name of the running image"
-docker exec -it *name_of_image* /bin/bash
+docker exec -it postgres /bin/bash
 
 psql -U postgres -p 
 password = postgres
