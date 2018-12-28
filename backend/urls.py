@@ -17,14 +17,16 @@ from django.contrib import admin
 from django.urls import path
 
 
-from .views import SignupView, BookletAPI, AppointmentAPI, AppointmentDetailAPI, TeacherListView
-from rest_framework_jwt.views import obtain_jwt_token
+from .views import SignupView, BookletAPI, AppointmentAPI, AppointmentDetailAPI, TeacherListView, LoggedInUserView,JSONWebToken
+
 urlpatterns = [
     path('admin/', admin.site.urls),
 
-    path('sign-in', obtain_jwt_token),
+    path('sign-in', JSONWebToken.as_view()),
 
     path('sign-up', SignupView.as_view()),
+
+    path('user', LoggedInUserView.as_view()),
 
     path('booklets', BookletAPI.as_view()),
 

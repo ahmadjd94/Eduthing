@@ -1,9 +1,7 @@
-from django.contrib.auth.models import User
 from rest_framework import serializers
 
 from .models import (
     Appointment, Booklet, Order, SYSTEMS, PAYMENT_METHODS, GroupAppointment, Upload, Member, TEACHER,
-    MEMBER_TYPES
 )
 
 
@@ -15,6 +13,7 @@ class UserSerializer(serializers.ModelSerializer):
         fields = (
             "first_name",
             "last_name",
+            "username",
             "type",
             "phone",
             "password",
@@ -28,6 +27,15 @@ class UserSerializer(serializers.ModelSerializer):
             "max_number_per_group",
             "price_per_hour",
         )
+
+    def update(self, instance, validated_data):
+        new_password = validated_data.pop("password", None)
+
+        if new_password:
+            instance.set_password(new_password)
+            instance.save()
+
+        return super(UserSerializer, self).update(instance, validated_data)
 
 
 class BookletSerializer(serializers.ModelSerializer):
