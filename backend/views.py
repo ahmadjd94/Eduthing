@@ -116,15 +116,10 @@ class AppointmentAPI(APIView):
         return Response(data={"error": "must be a student to create an appointment"}, status=HTTP_401_UNAUTHORIZED)
 
     def get(self, request, format=None):
-        query_serializer = BookletQuerySerializer(data=request.query_params)
+        query = request.user.member.student_appointments.all() if request.user.member.type == "STUDENT" else request.user.member.teacher_appointments.all()
+        serializer = AppointmentSerializer(query, many=True)
 
-        if query_serializer.is_valid():
-            query = Booklet.objects.filter(**query_serializer.data)
-            serializer = BookletSerializer(query, many=True)
-
-            return Response(serializer.data, status=HTTP_200_OK)
-
-        return Response(query_serializer.errors, status=HTTP_400_BAD_REQUEST)
+        return Response(serializer.data, status=HTTP_200_OK)
 
 
 class AppointmentDetailAPI(APIView):
@@ -132,14 +127,12 @@ class AppointmentDetailAPI(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request, pk: int, format=None):
-
         query = get_object_or_404(Appointment, pk)
         serializer = BookletSerializer(query, many=True)
 
         return Response(serializer.data, status=HTTP_200_OK)
 
     def patch(self, request, pk: int, format=None):
-
         query = Appointment.objects.get_object_or_404(pk)
         query.status = APPROVED
         query.save()

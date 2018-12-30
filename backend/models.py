@@ -58,6 +58,12 @@ class Member (User):  # created
     max_number_per_group = models.IntegerField()
     price_per_hour = models.FloatField()
 
+    # objects = models.manager
+
+    def __str__(self):
+        print("WE HERE")
+        return str(self.id)
+
 
 class Booklet(models.Model): # created
     type = models.CharField(choices=BOOKLET_TYPES, max_length=32)
@@ -91,6 +97,8 @@ class Appointment(models.Model):
     teacher_rating = models.IntegerField(default=0)
     status = models.CharField(choices=APPOINTMENT_STATUSES, max_length=32, default="WAITING")
 
+    objects = models.manager
+
     class Meta:
         db_table = "appointment"
 
@@ -105,7 +113,6 @@ class GroupAppointment(models.Model):
     price_per_student = models.FloatField()
     teacher_rating = models.IntegerField()
     status = models.CharField(choices=APPOINTMENT_STATUSES, max_length=32, default="WAITING")
-
 
     class Meta:
         db_table = "group_appointment"

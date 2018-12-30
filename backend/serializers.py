@@ -6,11 +6,13 @@ from .models import (
 
 
 class UserSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(read_only=True)
     password = serializers.CharField(required=True, write_only=True)
 
     class Meta:
         model = Member
         fields = (
+            "id",
             "first_name",
             "last_name",
             "username",
@@ -79,6 +81,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
     address = serializers.CharField(max_length=32)
     duration = serializers.TimeField()
     price = serializers.FloatField()
+    status = serializers.ChoiceField
 
     class Meta:
         model = Appointment
