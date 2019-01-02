@@ -10,7 +10,7 @@ from django.db.utils import IntegrityError
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
 from rest_framework_jwt.views import ObtainJSONWebToken
-
+import datetime
 
 from rest_framework import status
 from datetime import datetime
@@ -40,7 +40,7 @@ class SignupView(APIView):
                 target_user = Member.objects.create_user(**request.data)
                 target_user.save()
             except IntegrityError:
-                return Response({"error":"Username already exist"}, status=HTTP_400_BAD_REQUEST)
+                return Response({"error": "Username already exist"}, status=HTTP_400_BAD_REQUEST)
 
             return Response(serializer.data)
         return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
@@ -53,7 +53,7 @@ class TeacherListView(APIView): #end point tested
         query = TeahcerQuerySerializer(data=request.query_params)
 
         if query.is_valid():
-            query = Member.objects.filter(type="TEACHER",**query.data)
+            query = Member.objects.filter(type="TEACHER", **query.data)
             serializer = UserSerializer(query, many=True)
 
             return Response(serializer.data, status=HTTP_200_OK)
@@ -118,7 +118,14 @@ class AppointmentAPI(APIView):
     def get(self, request, format=None):
         query = request.user.member.student_appointments.all() if request.user.member.type == "STUDENT" else request.user.member.teacher_appointments.all()
         serializer = AppointmentSerializer(query, many=True)
+        for i in serializer.data:
 
+            try:
+                if datetime.strptime(i["time"], "%Y-%m-%dT%H:%M:%SZ") < datetime.now():
+                    i["status"] = "FINISHED"
+            except ValueError:
+                if datetime.strptime(i["time"], "%Y-%m-%dT%H:%M:%S.%fZ") < datetime.now():
+                    i["status"] = "FINISHED"
         return Response(serializer.data, status=HTTP_200_OK)
 
 
@@ -128,7 +135,7 @@ class AppointmentDetailAPI(APIView):
 
     def get(self, request, pk: int, format=None):
         query = get_object_or_404(Appointment, pk)
-        serializer = BookletSerializer(query, many=True)
+        serializer = AppointmentSerializer(query, many=True)
 
         return Response(serializer.data, status=HTTP_200_OK)
 
@@ -195,7 +202,7 @@ class JSONWebToken(ObtainJSONWebToken):
         if serializer.is_valid():
             user = serializer.object.get('user') or request.user
             user_data = UserSerializer(user.member)
-            print(user_data.data)
+
             token = serializer.object.get('token')
             response_data = {**jwt_response_payload_handler(token, user, request), **user_data.data}
             response = Response(response_data)
@@ -227,7 +234,7 @@ class LoggedInUserView(APIView):
         serializer = UserSerializer(instance=member, data=request.data, partial=True)
 
         if serializer.is_valid():
-            serializer.save()
+            serializer.update(member, serializer.validated_data)
 
             return Response(serializer.data, status=HTTP_200_OK)
 
